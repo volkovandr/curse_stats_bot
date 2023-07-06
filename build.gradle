@@ -1,6 +1,9 @@
 plugins {
     id 'scala'
     id 'application'
+    id 'org.springframework.boot' version '3.1.1'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id 'com.google.cloud.tools.jib' version '3.3.2'
 }
 
 repositories {
@@ -10,11 +13,25 @@ repositories {
 dependencies {
     implementation 'org.scala-lang:scala-library:2.13.8'
 
-    implementation 'org.telegram:telegrambots:6.7.0'
-    runtimeOnly 'org.slf4j:slf4j-simple:2.0.7'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.telegram:telegrambots-spring-boot-starter:6.7.0'
 
+    implementation 'org.telegram:telegrambots:6.7.0'
 }
 
 application {
     mainClass = 'volkovandr.cursestatsbot.Entrypoint'
+}
+
+jib {
+    to {
+        image = 'cursestatsbot'
+        tags = ['latest']
+    }
+    container {
+        jvmFlags = ['-Xms512m', '-Xmx512m']
+    }
+    from {
+        image = 'openjdk:19-jdk-alpine'
+    }
 }

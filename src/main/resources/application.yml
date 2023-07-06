@@ -1,0 +1,17 @@
+printStatsCron: 0 * * * * ?
+
+logging:
+  level:
+    volkovandr: debug
+
+bot:
+  greeting-message: Hello everybody, the curse-stats-bot is running!
+  stats-message-template: User {user} cursed {cursesCount} times, his favorite curse is {favoriteCurse}!
+  goodbye-message: Goodbye everybody, the curse-stats-bot is shutting down!
+  curses:
+    - fuck.*
+    - shit.*
+    - damn.*
+    - cunt
+    - bitch
+
