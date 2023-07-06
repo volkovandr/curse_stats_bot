@@ -30,3 +30,6 @@ replay_pid*
 build
 
 .idea
+
+#Do not ignore gradle wrapper jar file
+!gradle/wrapper/gradle-wrapper.jar
