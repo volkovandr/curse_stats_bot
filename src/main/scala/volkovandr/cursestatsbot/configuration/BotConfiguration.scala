@@ -9,14 +9,18 @@ import scala.util.matching.Regex
 
 @Configuration
 @ConfigurationProperties(prefix = "bot")
-class Messages {
+class BotConfiguration {
   @BeanProperty var greetingMessage: String = ""
 
   @BeanProperty var statsMessageTemplate: String = _
 
   @BeanProperty var goodbyeMessage: String = ""
 
+  @BeanProperty var replaceLetters: java.util.Map[String, String] = Map[String, String]().asJava
+
   @BeanProperty var curses: java.util.List[String] = _
+
+  @BeanProperty var botUserName: String = ""
 
   def statsMessage(user: String, cursesCount: Int, favoriteCurse: String): String = {
     statsMessageTemplate
