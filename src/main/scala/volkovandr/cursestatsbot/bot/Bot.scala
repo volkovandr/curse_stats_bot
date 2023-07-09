@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
-import org.telegram.telegrambots.meta.api.objects.{Message, Update}
+import org.telegram.telegrambots.meta.api.objects.{Message, Update, User}
 import volkovandr.cursestatsbot.Logging
 import volkovandr.cursestatsbot.configuration.BotConfiguration
 
@@ -39,14 +39,18 @@ class Bot(@Value("${apikey}") apiKey: String, config: BotConfiguration) extends 
       )
       findCurses(
         update.getMessage.getChatId,
-        Option(update.getMessage.getFrom.getUserName)
-          .getOrElse(s"${
-            Option(update.getMessage.getFrom.getFirstName).getOrElse("")
-          } ${
-            Option(update.getMessage.getFrom.getLastName).getOrElse("")
-          }").trim,
+        userName(update.getMessage.getFrom),
         update.getMessage.getText
       )
+    }
+  }
+
+  private def userName(user: User): String = {
+    val name = (Option(user.getFirstName).getOrElse("") + " " + Option(user.getLastName).getOrElse("")).trim
+    if (name == "") {
+      Option(user.getUserName).getOrElse("")
+    } else {
+      name
     }
   }
 
