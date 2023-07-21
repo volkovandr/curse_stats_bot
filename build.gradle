@@ -13,10 +13,18 @@ repositories {
 dependencies {
     implementation 'org.scala-lang:scala-library:2.13.8'
 
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.telegram:telegrambots-spring-boot-starter:6.7.0'
 
     implementation 'org.telegram:telegrambots:6.7.0'
+
+    // scalatest
+    testImplementation 'org.scalatest:scalatest_2.13:3.2.14'
+    implementation "org.scalatestplus:scalatestplus-junit_2.13:1.0.0-M2"
+}
+
+test {
+    useJUnit()
 }
 
 application {

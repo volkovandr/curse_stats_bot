@@ -8,18 +8,19 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.{Message, Update, User}
 import volkovandr.cursestatsbot.Logging
 import volkovandr.cursestatsbot.configuration.BotConfiguration
+import volkovandr.cursestatsbot.service.{StatisticsService, TextParser}
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
 
 @Component
-class Bot(@Value("${apikey}") apiKey: String, config: BotConfiguration) extends TelegramLongPollingBot(apiKey) with Logging {
+class Bot(
+           @Value("${apikey}") apiKey: String,
+           config: BotConfiguration,
+           textParser: TextParser,
+           statsService: StatisticsService
+         ) extends TelegramLongPollingBot(apiKey) with Logging {
 
   private val chats: mutable.Set[Long] = mutable.Set()
-
-  private val cursesPerUser: mutable.Map[(Long, String), mutable.Map[String, Int]] = mutable.Map()
-
-  private val replacementMap = config.replaceLetters.asScala.toMap
 
   override def onUpdateReceived(update: Update): Unit = {
     if (update.hasMessage && !chats.contains(update.getMessage.getChatId)) {
@@ -37,11 +38,11 @@ class Bot(@Value("${apikey}") apiKey: String, config: BotConfiguration) extends 
         update.getMessage.getFrom.getFirstName,
         update.getMessage.getFrom.getLastName
       )
-      findCurses(
-        update.getMessage.getChatId,
+      val curses = textParser.findCurses(
         userName(update.getMessage.getFrom),
         update.getMessage.getText
       )
+      if (curses.nonEmpty) statsService.addWords(update.getMessage.getChatId, userName(update.getMessage.getFrom), curses)
     }
   }
 
@@ -52,24 +53,6 @@ class Bot(@Value("${apikey}") apiKey: String, config: BotConfiguration) extends 
     } else {
       name
     }
-  }
-
-  private def findCurses(chatId: Long, userName: String, message: String): Unit = {
-    message
-      .split("[^\\p{IsAlphabetic}]")
-      .map(_.toLowerCase)
-      .foreach { word =>
-        log.trace("Checking word: {}", word)
-        config.cursesTemplates.find(_.matches(replaceLetters(word))).foreach { _ =>
-          val usersMap = cursesPerUser.getOrElseUpdate((chatId, userName), mutable.Map())
-          usersMap += (word -> (usersMap.getOrElse(word, 0) + 1))
-          log.debug("User {} used curse {}", userName, word)
-        }
-      }
-  }
-
-  private def replaceLetters(word: String): String = replacementMap.foldLeft(word) {
-    case (acc, (from, to)) => acc.replace(from, to)
   }
 
   override def getBotUsername: String = config.botUserName
@@ -89,26 +72,19 @@ class Bot(@Value("${apikey}") apiKey: String, config: BotConfiguration) extends 
       }
   }
 
-  def clearCurseStats(): Unit = cursesPerUser.clear()
+  def clearCurseStats(): Unit = statsService.clear()
 
   def sendCurseStats(): Unit = {
-    log.debug("Curses stats: {}", cursesPerUser)
-    cursesPerUser.groupBy(_._1._1).foreach {
-      case (chatId, cursesMap) =>
-        cursesMap
-          .map(kv => (kv._1._2, kv._2.toList.map(_._2).sum))
-          .toList
-          .sortBy(_._2)
-          .reverse
-          .headOption
-          .foreach {
-            case (userName, cursesCount) =>
-              val favoriteCurse = cursesPerUser
-                .get((chatId, userName))
-                .flatMap(_.toList.sortBy(_._2).reverse.map(_._1).headOption)
-                .getOrElse("")
-              sendMessage(chatId, config.statsMessage(userName, cursesCount, favoriteCurse))
-          }
+    log.debug("Curses stats: {}", statsService.stats.cursesPerChat)
+    chats.filter(chatId => statsService.getTotalNumberOfCurses(chatId) > 0).foreach { chatId =>
+      val maxCursingUsers = statsService.findMostCursingUsers(chatId)
+      val maxCurses = statsService.findMostUsedCurses(chatId)
+      val totalCurses = statsService.getTotalNumberOfCurses(chatId)
+      sendMessage(chatId, config.statsMessage(
+        maxCursingUsers.map(_._1),
+        maxCursingUsers.headOption.map(_._2).getOrElse(0),
+        totalCurses,
+        maxCurses.map(_._1)))
     }
   }
 

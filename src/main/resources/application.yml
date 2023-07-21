@@ -2,13 +2,17 @@ printStatsCron: 0 * * * * ?
 
 logging:
   level:
+    root: warn
     volkovandr: trace
 
 bot:
   bot-user-name: curse-stats-test-bot
   greeting-message: Hello everybody, the curse-stats-bot is running!
-  stats-message-template: User {user} cursed {cursesCount} times, his favorite curse is {favoriteCurse}!
   goodbye-message: Goodbye everybody, the curse-stats-bot is shutting down!
+  stats-message-template-single-user-single-word: Today we cursed {totalCursesCount} times in total. User {user} is the winner, he cursed {userCursesCount} times. The word of the day is {favoriteCurse}!
+  stats-message-template-multi-user-single-word: Today we cursed {totalCursesCount} times in total. Users {users} are the winners, they cursed {userCursesCount} times each. The word of the day is {favoriteCurse}!
+  stats-message-template-single-user-multi-word: Today we cursed {totalCursesCount} times in total. User {user} is the winner, he cursed {userCursesCount} times. The words of the day are {favoriteCurses}!
+  stats-message-template-multi-user-multi-word: Today we cursed {totalCursesCount} times in total. Users {users} are the winners, they cursed {userCursesCount} times each. The words of the day are {favoriteCurses}!
   replaceLetters:
     "[ё]": "е"
   curses:
