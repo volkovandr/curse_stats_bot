@@ -1,9 +1,9 @@
 plugins {
     id 'scala'
     id 'application'
-    id 'org.springframework.boot' version '3.1.1'
-    id 'io.spring.dependency-management' version '1.1.0'
-    id 'com.google.cloud.tools.jib' version '3.3.2'
+    id 'org.springframework.boot' version '3.1.5'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'com.google.cloud.tools.jib' version '3.4.0'
 }
 
 repositories {
@@ -11,12 +11,12 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.scala-lang:scala-library:2.13.8'
+    implementation 'org.scala-lang:scala-library:2.13.12'
 
     implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.telegram:telegrambots-spring-boot-starter:6.7.0'
+    implementation 'org.telegram:telegrambots-spring-boot-starter:6.8.0'
 
-    implementation 'org.telegram:telegrambots:6.7.0'
+    implementation 'org.telegram:telegrambots:6.8.0'
 
     // scalatest
     testImplementation 'org.scalatest:scalatest_2.13:3.2.14'
@@ -40,6 +40,6 @@ jib {
         jvmFlags = ['-Xms512m', '-Xmx512m']
     }
     from {
-        image = 'openjdk:19-jdk-alpine'
+        image = 'eclipse-temurin:21.0.1_12-jre-ubi9-minimal'
     }
 }
