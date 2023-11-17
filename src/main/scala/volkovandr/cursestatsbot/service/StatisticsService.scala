@@ -9,20 +9,31 @@ import scala.collection.mutable
 @Service
 class StatisticsService {
   val stats = new Statistics()
+  val discoveryOfTheDay: mutable.Map[Statistics.ChatId, (Statistics.Username, Statistics.Curse)] = mutable.Map()
 
   def clear(): Unit = {
-    stats.cursesPerChat.clear()
+    stats.cursesPerChatPerUser.clear()
+    discoveryOfTheDay.clear()
   }
 
   def addWords(chatId: Statistics.ChatId, userName: Statistics.Username, curses: Statistics.CursesList): Unit = {
-    val cursesPerUser: mutable.Map[Username, CursesList] = stats.cursesPerChat.getOrElse(chatId, mutable.Map())
+    val cursesPerUser: mutable.Map[Username, CursesList] = stats.cursesPerChatPerUser.getOrElse(chatId, mutable.Map())
     cursesPerUser.put(userName, cursesPerUser.getOrElse(userName, Seq()) ++ curses)
 
-    stats.cursesPerChat.put(chatId, cursesPerUser)
+    stats.cursesPerChatPerUser.put(chatId, cursesPerUser)
+    curses.foreach { curse =>
+      if(!stats.cursesPerChat.contains(chatId)) {
+        stats.cursesPerChat.put(chatId, Seq())
+      }
+      if(!stats.cursesPerChat(chatId).contains(curse) && !discoveryOfTheDay.contains(chatId)) {
+        discoveryOfTheDay.put(chatId, (userName, curse))
+      }
+      stats.cursesPerChat.put(chatId, stats.cursesPerChat(chatId) :+ curse)
+    }
   }
 
   def findMostCursingUsers(chatId: Statistics.ChatId): Seq[(Username, Int)] = {
-    val sorted = stats.cursesPerChat.getOrElse(chatId, Map())
+    val sorted = stats.cursesPerChatPerUser.getOrElse(chatId, Map())
       .map { case (userName, curses) => (userName, curses.size) }
       .toSeq
       .sortBy(-_._2)
@@ -33,7 +44,7 @@ class StatisticsService {
   }
 
   def findMostUsedCurses(chatId: Statistics.ChatId): Seq[(String, Int)] = {
-    val sorted = stats.cursesPerChat.getOrElse(chatId, Map())
+    val sorted = stats.cursesPerChatPerUser.getOrElse(chatId, Map())
       .toSeq
       .flatMap { case (_, curses) => curses }
       .groupBy(identity)
@@ -47,8 +58,10 @@ class StatisticsService {
   }
 
   def getTotalNumberOfCurses(chatId: Statistics.ChatId): Int = {
-    stats.cursesPerChat.getOrElse(chatId, Map())
+    stats.cursesPerChatPerUser.getOrElse(chatId, Map())
       .map { case (_, curses) => curses.size }
       .sum
   }
+
+  def getDiscoveryOfTheDay(chatId: Statistics.ChatId): Option[(Statistics.Username, Statistics.Curse)] = discoveryOfTheDay.get(chatId)
 }

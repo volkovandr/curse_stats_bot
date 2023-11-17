@@ -75,7 +75,7 @@ class Bot(
   def clearCurseStats(): Unit = statsService.clear()
 
   def sendCurseStats(): Unit = {
-    log.debug("Curses stats: {}", statsService.stats.cursesPerChat)
+    log.debug("Curses stats: {}", statsService.stats.cursesPerChatPerUser)
     chats.filter(chatId => statsService.getTotalNumberOfCurses(chatId) > 0).foreach { chatId =>
       val maxCursingUsers = statsService.findMostCursingUsers(chatId)
       val maxCurses = statsService.findMostUsedCurses(chatId)
