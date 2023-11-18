@@ -8,7 +8,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.{Message, Update, User}
 import volkovandr.cursestatsbot.Logging
 import volkovandr.cursestatsbot.configuration.BotConfiguration
-import volkovandr.cursestatsbot.service.{StatisticsService, TextParser}
+import volkovandr.cursestatsbot.service.{MessageService, StatisticsService, TextParser}
 
 import scala.collection.mutable
 
@@ -17,7 +17,8 @@ class Bot(
            @Value("${apikey}") apiKey: String,
            config: BotConfiguration,
            textParser: TextParser,
-           statsService: StatisticsService
+           statsService: StatisticsService,
+           messageService: MessageService
          ) extends TelegramLongPollingBot(apiKey) with Logging {
 
   private val chats: mutable.Set[Long] = mutable.Set()
@@ -80,7 +81,7 @@ class Bot(
       val maxCursingUsers = statsService.findMostCursingUsers(chatId)
       val maxCurses = statsService.findMostUsedCurses(chatId)
       val totalCurses = statsService.getTotalNumberOfCurses(chatId)
-      sendMessage(chatId, config.statsMessage(
+      sendMessage(chatId, messageService.statsMessage(
         maxCursingUsers.map(_._1),
         maxCursingUsers.headOption.map(_._2).getOrElse(0),
         totalCurses,
