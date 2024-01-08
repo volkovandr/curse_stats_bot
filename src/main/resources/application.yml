@@ -9,10 +9,13 @@ bot:
   bot-user-name: curse-stats-test-bot
   greeting-message: Hello everybody, the curse-stats-bot is running!
   goodbye-message: Goodbye everybody, the curse-stats-bot is shutting down!
-  stats-message-template-single-user-single-word: Today we cursed {totalCursesCount} times in total. User {user} is the winner, he cursed {userCursesCount} times. The word of the day is {favoriteCurse}!
-  stats-message-template-multi-user-single-word: Today we cursed {totalCursesCount} times in total. Users {users} are the winners, they cursed {userCursesCount} times each. The word of the day is {favoriteCurse}!
-  stats-message-template-single-user-multi-word: Today we cursed {totalCursesCount} times in total. User {user} is the winner, he cursed {userCursesCount} times. The words of the day are {favoriteCurses}!
-  stats-message-template-multi-user-multi-word: Today we cursed {totalCursesCount} times in total. Users {users} are the winners, they cursed {userCursesCount} times each. The words of the day are {favoriteCurses}!
+  stats-message-template: |
+    {totalCursesCount=>0:Today we did not curse at all! That was unexpected!|>0:
+    Today we cursed {totalCursesCount} times in total. 
+    User{winnerCount=><=1:|>1:s} {winners:and} {winnerCount=><=1:is|>1:are} the winner{winnerCount=><=1:|>1:s}, they cursed {winnerCursesCount} times{winnerCount=><=1:|>1:each}. 
+    The words of the day are {favoriteCurses:and}!}
+    {discoveryOfTheDayCount=>0:|>0:Today we discovered a new curse word! It is {discoveryOfTheDay}! Amazing!}
+    {cheatersCount=>0:|>0:Today we had {cheatersCount} cheater{cheatersCount=><=1:|>1:s}! Shame on you, {cheaters}!}
   replaceLetters:
     "[ё]": "е"
   curses:
@@ -22,5 +25,8 @@ bot:
     - cunt
     - bitch
     - черт.*
+  cheating-check-max-curses-per-message: 10
+  cheating-check-max-same-curse-per-message: 5
+  stats-when-no-curses: true
 
 

@@ -21,6 +21,8 @@ class Bot(
            messageService: MessageService
          ) extends TelegramLongPollingBot(apiKey) with Logging {
 
+  messageService.validateConfig()
+
   private val chats: mutable.Set[Long] = mutable.Set()
 
   override def onUpdateReceived(update: Update): Unit = {
@@ -43,8 +45,24 @@ class Bot(
         userName(update.getMessage.getFrom),
         update.getMessage.getText
       )
-      if (curses.nonEmpty) statsService.addWords(update.getMessage.getChatId, userName(update.getMessage.getFrom), curses)
+      if (curses.nonEmpty) {
+        if (wasCheating(curses)) {
+          log.debug("User {} was cheating with curses {}", userName(update.getMessage.getFrom), curses)
+          statsService.reportCheater(update.getMessage.getChatId, userName(update.getMessage.getFrom))
+        }
+        else
+          statsService.addWords(update.getMessage.getChatId, userName(update.getMessage.getFrom), curses)
+      }
     }
+  }
+
+  def wasCheating(curses: Seq[String]): Boolean = {
+    val cursesInMessage = curses.size
+    val maxUsedCurseCount = curses.groupBy(identity).map(_._2.size).max
+    log.trace("Checking {} for cheating", curses)
+    val wasCheating = cursesInMessage >= config.cheatingCheckMaxCursesPerMessage || maxUsedCurseCount >= config.cheatingCheckMaxSameCursePerMessage
+    log.trace("CursesInMessage = {}, maxUsedCurseCount = {}. Was cheating: {}", cursesInMessage, maxUsedCurseCount, wasCheating)
+    wasCheating
   }
 
   private def userName(user: User): String = {
@@ -77,15 +95,20 @@ class Bot(
 
   def sendCurseStats(): Unit = {
     log.debug("Curses stats: {}", statsService.stats.cursesPerChatPerUser)
-    chats.filter(chatId => statsService.getTotalNumberOfCurses(chatId) > 0).foreach { chatId =>
+    chats.filter(chatId => statsService.getTotalNumberOfCurses(chatId) > 0 || config.statsWhenNoCurses).foreach { chatId =>
       val maxCursingUsers = statsService.findMostCursingUsers(chatId)
       val maxCurses = statsService.findMostUsedCurses(chatId)
       val totalCurses = statsService.getTotalNumberOfCurses(chatId)
+      val cheaters = statsService.getCheaters(chatId)
+      val discoveryOfTheDay = statsService.getDiscoveryOfTheDay(chatId)
       sendMessage(chatId, messageService.statsMessage(
         maxCursingUsers.map(_._1),
         maxCursingUsers.headOption.map(_._2).getOrElse(0),
         totalCurses,
-        maxCurses.map(_._1)))
+        maxCurses.map(_._1),
+        cheaters,
+        discoveryOfTheDay
+      ))
     }
   }
 

@@ -33,3 +33,6 @@ build
 
 #Do not ignore gradle wrapper jar file
 !gradle/wrapper/gradle-wrapper.jar
+
+#Do not commit local testing settings
+application-local.yml

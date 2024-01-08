@@ -12,12 +12,15 @@ import scala.util.matching.Regex
 class BotConfiguration {
   @BeanProperty var greetingMessage: String = ""
 
-  @BeanProperty var statsMessageTemplateSingleUserSingleWord: String = _
-  @BeanProperty var statsMessageTemplateMultiUserSingleWord: String = _
-  @BeanProperty var statsMessageTemplateSingleUserMultiWord: String = _
-  @BeanProperty var statsMessageTemplateMultiUserMultiWord: String = _
-
   @BeanProperty var goodbyeMessage: String = ""
+
+  @BeanProperty var statsMessageTemplate: String = _
+
+  @BeanProperty var cheatingCheckMaxCursesPerMessage: Int = _
+
+  @BeanProperty var cheatingCheckMaxSameCursePerMessage: Int = _
+
+  @BeanProperty var statsWhenNoCurses: Boolean = _
 
   @BeanProperty var replaceLetters: java.util.Map[String, String] = Map[String, String]().asJava
 
