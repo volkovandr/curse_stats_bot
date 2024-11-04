@@ -7,17 +7,21 @@ import scala.util.Random
 
 @Service
 class MessageService(config: BotConfiguration) {
+  type UserName = String
+  type Curse = String
+  type PlaceHolder = String
+
   def greetingMessage: String = config.greetingMessage
 
   def goodbyeMessage: String = config.goodbyeMessage
 
   def statsMessage(
-                    winners: Seq[String],
+                    winners: Seq[UserName],
                     winnerCursesCount: Int,
                     totalCursesCount: Int,
-                    favoriteCurses: Seq[String],
-                    cheaters: Seq[String],
-                    discoveryOfTheDay: Option[(String, String)]
+                    favoriteCurses: Seq[Curse],
+                    cheaters: Seq[UserName],
+                    discoveryOfTheDay: Option[(UserName, Curse)]
                   ): String = multireplace(
     config.statsMessageTemplate,
     Map("discoveryOfTheDay" -> discoveryOfTheDay.map(_._2).getOrElse(""), "discoveryOfTheDayUser" -> discoveryOfTheDay.map(_._1).getOrElse("")),
@@ -127,13 +131,14 @@ class MessageService(config: BotConfiguration) {
    *         lists = Map()
    *         result = "You have a few curses!"
    */
-  def multireplace(template: String, strings: Map[String, String], numerics: Map[String, Int], lists: Map[String, Seq[String]]): String =
+  // TODO: fix the bug: when a username contains a "{" or "}" character, the function will throw an exception
+  def multireplace(template: String, strings: Map[PlaceHolder, String], numerics: Map[PlaceHolder, Int], lists: Map[PlaceHolder, Seq[String]]): String =
     template match {
       case x if x.contains("{") => multireplace(replaceInnerMost(template, strings, numerics, lists), strings, numerics, lists)
       case _ => template
     }
 
-  def replaceInnerMost(template: String, strings: Map[String, String], numerics: Map[String, Int], lists: Map[String, Seq[String]]): String =
+  def replaceInnerMost(template: String, strings: Map[PlaceHolder, String], numerics: Map[PlaceHolder, Int], lists: Map[PlaceHolder, Seq[String]]): String =
     template match {
       case x if x.contains("{") =>
         val start = x.lastIndexOf("{")
@@ -143,7 +148,8 @@ class MessageService(config: BotConfiguration) {
         x.substring(0, start) + replacement + x.substring(end + 1)
       case _ => template
     }
-  def replaceSingle(template: String, strings: Map[String, String], numerics: Map[String, Int], lists: Map[String, Seq[String]]): String =
+
+  def replaceSingle(template: String, strings: Map[PlaceHolder, String], numerics: Map[PlaceHolder, Int], lists: Map[PlaceHolder, Seq[String]]): String =
     template match {
       case simpleStringKey if strings.contains(simpleStringKey) => strings(simpleStringKey)
       case simpleNumericKey if numerics.contains(simpleNumericKey) => numerics(simpleNumericKey).toString
@@ -160,7 +166,7 @@ class MessageService(config: BotConfiguration) {
         lists(listKey) match {
           case Nil => ""
           case head :: Nil => head
-          case longerList => longerList.dropRight(1).mkString(", ") + separator + longerList.last
+          case longerList => longerList.dropRight(1).mkString(", ") + " " + separator + " " + longerList.last
         }
       case numericPlaceholder if numericPlaceholder.contains("=>")
         && numericPlaceholder.split("=>").length == 2

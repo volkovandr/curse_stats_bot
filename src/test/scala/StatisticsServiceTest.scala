@@ -142,4 +142,21 @@ class StatisticsServiceTest extends FlatSpecTestBase with BeforeAndAfterEach {
     service.getDiscoveryOfTheDay(1) should be (None)
   }
 
+  it should "remove a chat from statistics on removeChat()" in {
+    service.addWords(1, "user1", Seq("word1", "word2", "word3"))
+    service.addWords(1, "user2", Seq("word4", "word5"))
+    service.addWords(2, "user3", Seq("word6", "word7", "word8"))
+    service.addWords(2, "user4", Seq("word9", "word10"))
+
+    service.stats.cursesPerChatPerUser should have size(2)
+    service.stats.cursesPerChat should have size(2)
+    service.discoveryOfTheDay should have size(2)
+
+    service.removeChat(1)
+
+    service.stats.cursesPerChatPerUser should have size(1)
+    service.stats.cursesPerChat should have size(1)
+    service.discoveryOfTheDay should have size(1)
+  }
+
 }
