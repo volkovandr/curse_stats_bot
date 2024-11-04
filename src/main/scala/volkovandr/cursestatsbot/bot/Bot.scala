@@ -21,9 +21,11 @@ class Bot(
            messageService: MessageService
          ) extends TelegramLongPollingBot(apiKey) with Logging {
 
+  type ChatId = Long
+
   messageService.validateConfig()
 
-  private val chats: mutable.Set[Long] = mutable.Set()
+  private val chats: mutable.Set[ChatId] = mutable.Set()
 
   override def onUpdateReceived(update: Update): Unit = {
     if (update.hasMessage && !chats.contains(update.getMessage.getChatId)) {
@@ -94,33 +96,59 @@ class Bot(
   def clearCurseStats(): Unit = statsService.clear()
 
   def sendCurseStats(): Unit = {
+    log.info("Sending stats to {} chats", chats.size)
     log.debug("Curses stats: {}", statsService.stats.cursesPerChatPerUser)
+    val blockedChats: mutable.Set[ChatId] = mutable.Set()
     chats.filter(chatId => statsService.getTotalNumberOfCurses(chatId) > 0 || config.statsWhenNoCurses).foreach { chatId =>
       val maxCursingUsers = statsService.findMostCursingUsers(chatId)
       val maxCurses = statsService.findMostUsedCurses(chatId)
       val totalCurses = statsService.getTotalNumberOfCurses(chatId)
       val cheaters = statsService.getCheaters(chatId)
       val discoveryOfTheDay = statsService.getDiscoveryOfTheDay(chatId)
-      sendMessage(chatId, messageService.statsMessage(
-        maxCursingUsers.map(_._1),
-        maxCursingUsers.headOption.map(_._2).getOrElse(0),
-        totalCurses,
-        maxCurses.map(_._1),
-        cheaters,
-        discoveryOfTheDay
-      ))
+      try {
+        if (!sendMessage(chatId, messageService.statsMessage(
+          maxCursingUsers.map(_._1),
+          maxCursingUsers.headOption.map(_._2).getOrElse(0),
+          totalCurses,
+          maxCurses.map(_._1),
+          cheaters,
+          discoveryOfTheDay
+        ))) {
+          blockedChats.add(chatId)
+          log.debug("Chat {} was blocked", chatId)
+        }
+      }
+      catch {
+        case e: Throwable => log.error("Error when sending stats to the chat {}", chatId, e)
+      }
     }
+    blockedChats.foreach { chatId =>
+      chats.remove(chatId)
+      statsService.removeChat(chatId)
+    }
+
   }
 
-  private def sendMessage(chatId: Long, text: String): Unit = {
+  /**
+   * Send message to chat
+   * @param chatId
+   * @param text
+   * @return true if everything is fine or if there was a recoverable error and false if the error was not recoverable
+   */
+  private def sendMessage(chatId: Long, text: String): Boolean = {
     val message = new SendMessage()
     message.setChatId(chatId)
     message.setText(text)
     try {
       execute[Message, SendMessage](message)
+      true
     }
     catch {
-      case e: Throwable => e.printStackTrace()
+      case e: Throwable if e.getMessage.contains("chat not found") => false
+      case e: Throwable if e.getMessage.contains("bot was kicked from the group chat") => false
+      case e: Throwable =>
+        log.error("Error (hopefully recoverable) when sending message to chatId: {}", chatId, e)
+        true
     }
   }
 }

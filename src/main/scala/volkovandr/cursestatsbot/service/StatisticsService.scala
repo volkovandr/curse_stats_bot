@@ -72,4 +72,11 @@ class StatisticsService {
   def getCheaters(chatId: ChatId): Seq[Username] = stats.cheatersPerChat.getOrElse(chatId, Seq()).toSeq
 
   def getDiscoveryOfTheDay(chatId: Statistics.ChatId): Option[(Statistics.Username, Statistics.Curse)] = discoveryOfTheDay.get(chatId)
+
+  def removeChat(chatId: ChatId): Unit = {
+    stats.cursesPerChatPerUser.remove(chatId)
+    stats.cheatersPerChat.remove(chatId)
+    stats.cursesPerChat.remove(chatId)
+    discoveryOfTheDay.remove(chatId)
+  }
 }
